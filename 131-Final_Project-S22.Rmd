@@ -1,0 +1,711 @@
+---
+title: "131 Final Project"
+author: "Caleb Mazariegos"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+  pdf_document:
+    toc: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include= FALSE}
+# loading necessary packages
+library(tidyverse)
+library(tidymodels)
+library(corrr)
+library(ISLR)
+library(kernlab)
+library(ISLR2)
+library(discrim)
+library(poissonreg)
+library(klaR)
+library(dplyr)
+library(ggplot2)
+library(Hmisc)
+library(ggpubr)
+library(rpart.plot)
+library(vip)
+library(janitor)
+library(glmnet)
+library(corrplot)
+library(xgboost)
+library(tune)
+tidymodels_prefer()
+```
+
+
+# Introduction
+
+ The purpose of this project is to generate a model that will predict the average points per game an NBA player will make. I am using data from the 2020 - 2021 regular NBA season. 
+
+## What is the NBA?
+
+The NBA is an abbreviation for the National Basketball Association. It is a professional men's basketball league in North America. The league consists of 30 teams. 
+
+A regular basketball season runs from October to April, with playoffs extending into June. 
+
+
+A map displaying the NBA teams organized by conference: 
+![an image caption Source: https://en.wikipedia.org/wiki/National_Basketball_Association ](/Users/calebmazariegos/Desktop/map-of-teams.png){width=70%}
+
+source: https://en.wikipedia.org/wiki/National_Basketball_Association
+
+
+## Diagram of Basketball Court
+
+An image of half of an NBA Basketball Court:
+
+![an image caption Source: Half of a basketball court](/Users/calebmazariegos/Desktop/Basketball-Half.png){width=50%}
+
+source: https://en.wikipedia.org/wiki/Basketball
+
+A 2-pointer is a shot that is scored anywhere inside of the arc. A 3-pointer is a shot made anywhere outside of the arc. Foul shots from the free-throw line count for 1 point. 
+
+## Basketball Positions
+
+There are 5 players from each team on the court during a game. There will usually be a combination of the following positions: 
+
+* **Center (C)** - On offense, the center tries to score on close shots and rebounds. On Defense, the center blocks opponents' shots and rebounds. Usually the tallest and strongest player on the team. 
+
+* **Center Forward (CF)** - Players who play or have played both forward and center on a consistent basis
+
+* **Forward (F)** - Forwards are able to play both inside the paint and outside of it on offense and should be aggressive and rebound-minded on defense.
+
+* **Power Forward (F-C)** - The power forward does many of the things a center does, playing near the basket while rebounding and defending taller players. But power forwards also take longer shots than centers.
+
+* **Shooting Guard (F-G)** - The shooting guard is usually the team’s best shooter. The shooting guard can make shots from long distance and also is a good dribbler.
+
+* **Point Guard (G)** - Usually the best dribbler and passer, the point guard defends the opponent's point guard and tries to steal the ball
+
+* **Guard Forward (G-F)** - A combination between a forward and shooting guard
+
+
+## Rundown of Basketball Statistics
+
+Here are a list of statistics that I will be referencing in my project
+
+
+* **Games Played** ```gp```  - Total number of games a player has played for the season
+
+* **Minutes Per Game** ```mpg``` - The average number of minutes a player has played per game
+
+* **Minutes Percentage** ```min_percentage``` - Percentage of team minutes used by a player while he was on the floor
+
+* **Usage Percentage** ```usg``` - The percentage of team plays used by a player when they are on 
+
+* **Turnover Rate** ```to_percentage``` - A metric that estimates the number of turnovers a player commits per 100 possessions 
+
+* **Free Throws Attempted** ```fta``` -  The number of free throws that a player has attempted
+
+* **Free Throw Percentage** ```ft_percentage``` - The percentage of free throw attempts that a player has made successfully
+
+* **2 Point Field Goals Attempted** ```x2pa``` - The number of two pointers that a player has attempted
+
+* **2 Point Field Goals** ```x2p_percentage``` - The percentage of points scored by a player that are from 2 point field goals
+
+* **3 Point Field Goals Attempted** ```x3pa``` - The number of 3 point field goals that a player has attempted
+
+* **3 Point Field Goals** ```x3p_percentage``` - The percentage of points scored by a player that are from 3 point field goals
+
+* **Effective Field Goal Percentage** ```e_fg``` - Measures field goal percentage adjusting for made 3-point field goals being 1.5 times more valuable than made 2-point field goals.
+
+* **True Shooting Percentage ** ```ts_percent``` - A shooting percentage that factors in the value of three-point field goals and free throws in addition to conventional two-point field goals
+
+* **Rebounds Per Game** ```rpg``` - The number of rebounds a player makes per game
+
+* **Total Rebound Percentage** ```trb_percent``` - The estimated percentage of available rebounds grabbed by the player while the player is on the court 
+
+*  **Assists Per Game** ```apg```- The average number of assists a player makes per game
+
+* **Assist Percentage** ```ast_percentage``` - The estimated percentage of teammate field goals a player assisted while the player is on the court
+
+* **Steals Per Game** ```spg``` - The average number of steals a player makes per game
+
+* **Blocks Per Game** ```bpg``` - The average number of blocks a player makes per game
+
+* **Turnovers Per Game** ```topg```  - The average number of turnovers a player makes per game, it is when a team loses possession of the ball to the opposing team
+
+* **Versatility Index**```vi_versatility```- A metric that measures a player's ability to produce in points, assists, and rebounds. The average player will score around a 5 on the index, while top players score above a 10
+
+* **Offensive Rating** ```ortg_offensive``` - The number of points produced by a player per 100 total individual possessions
+
+* **Defensive Rating** ```drtg_defensive``` - The number of points the player allowed per 100 possessions he individually faced while staying on the court 
+
+In addition to the statistics mentioned above, I will also be using the following variables in my report:
+* ```age``` : The age of the player
+
+* ```pos``` - The position that of the player (F, G, C-F, F, F-C, F-G, G, G-F)
+
+I will not be using the team, as I do not think it is relevant. 
+
+# Data Cleaning
+
+- Cleaning the names and loading the data set: 
+
+```{r}
+# loading and cleaning data set
+basketball_codebook <- read.csv("/Users/calebmazariegos/Desktop/2020 - 2021 Basketball Data Set - Sheet1.csv")
+
+basketball_codebook <- clean_names(basketball_codebook)
+
+basketball_codebook <- na.omit(basketball_codebook)
+
+```
+
+
+
+- Removing unnecessary variables and displaying the first 3 observations: 
+```{r}
+options(width = 100)
+
+basketball_codebook <- basketball_codebook %>%
+  select(-team, -full_name)
+
+head(basketball_codebook, n = 3)
+```
+- Setting ```pos``` as a factor:
+```{r}
+basketball_codebook$pos <- as.factor(basketball_codebook$pos)
+```
+
+# Exploratory Data Analysis
+
+The exploratory data analysis is based on 626 observations. Each observation represents a single NBA player from the 2020 - 2021 season. 
+
+## Correlation between variables
+
+removing non-numeric variables and variables with NA correlation to clean up plot:
+
+```{r}
+# removing non-numeric variables and variables with NA values
+basketball_codebook_continuous <- basketball_codebook %>%
+  select(-pos, -drtg_defensive, -e_fg, -ortg_offensive, -to_percentage, -ts_percent)
+M = cor(basketball_codebook_continuous)
+corrplot(M, method = "color", order = "alphabet")
+```
+
+## Distribution of continuous variables 
+
+I saved the histogram as a jpeg because the plot did not fit all of the histograms correctly
+
+```{r, message= FALSE}
+df1 <- basketball_codebook[,c('age','gp','mpg', 'min_percentage', 'usg', 'to_percentage', 'fta', 'ft_percentage', 'x2pa', 'x2p_percentage', 'x3pa', 'x3p_percentage', 'e_fg', 'ts_percent', 'ppg',  'rpg')]
+
+jpeg(file = "saving_plot1.jpeg")
+hist.data.frame(df1, main = "Histograms of all Continuous Variables")
+dev.off()
+```
+
+![ ](/Users/calebmazariegos/Desktop/saving_plot1.jpeg)
+
+Now it is easy to see which variables are skewed left, skewed right, and which ones have normal and uniform distributions. 
+
+## Histogram of average Points Per Game
+
+Let's take a closer look at the distribution of the average points per game:
+
+```{r}
+hist(basketball_codebook$ppg, main = "Histogram of average Points Per Game", xlab = "Points Per Game (PPG)", col = "#4287f5",
+     xlim = c(0,35), breaks = 25)
+```
+
+There is a rightward skew, this means that most players tend to score around 3 - 7 points per game. 
+
+
+## Position
+I hypothesize that the position of the player affects how many points per game the player will average because some positions might be better suited to shooting goals. I will break this down further by looking into how the position of the player affects how many points per game they score:
+
+```{r}
+ggplot(basketball_codebook, aes(ppg)) +
+  geom_histogram(bins = 20, color = "black", fill = "#28753d") +
+  facet_wrap(~pos, scales = "free_y") +
+  labs(
+    title = "Histogram of PPG by position"
+  ) +  theme(plot.title = element_text(hjust = 0.5))
+```
+```{r}
+ggplot(basketball_codebook, aes(reorder(pos, ppg), ppg)) +
+  geom_boxplot(varwidth = TRUE, color = "red", fill = "white") + 
+  coord_flip() +
+  labs(
+    title = "Position by PPG",
+    x = "Position"
+  ) + theme(plot.title = element_text(hjust = 0.5))
+```
+
+It looks like most positions have the same average, which is between 5 - 10 goals. Point Guards (G) and Forwards tend to have the most outliers (F). As expected, Shooting Guards (F-G) have the highest average.
+
+Now, let's examine how the number of games played impacts the average number of minutes per game. 
+
+```{r, message = FALSE}
+ggplot(basketball_codebook, aes(mpg, ppg, colour = pos)) + labs(x = "Minutes Per Game (mpg)", y = "Points Per Game (ppg)", title = "PPG vs MPG") +
+  geom_smooth(se = FALSE, color = "red", size = 2) +geom_point()
+
+```
+
+The relationship between Minutes Per Game ```mpg``` and ```points per game``` seems to be positive. This means that if the player has a higher average minutes per game, they will likely have more points per game. This makes sense since they will have more time on the court to have a chance to shoot.
+
+## 3-pointers vs 2-pointers
+
+```{r}
+library(scales)
+c1 <- rgb(80, 35, 204,max = 255, alpha = 80, names = "lt.blue")
+c2 <- rgb(230, 223, 28, max = 255, alpha = 80, names = "lt.pink")
+hgA <- hist(basketball_codebook$x2p_percentage, breaks = 20,plot = FALSE)
+hgB <- hist(basketball_codebook$x3p_percentage, breaks = 20,plot = FALSE)
+
+plot(hgA, col = c2, ylim = c(0,200), main = "Histogram of 2P% and 3P%", xlab = "Percentage of Success", xlim = (0:1))
+plot(hgB, col = c1, add = TRUE)
+
+
+legend("topright", c("2P%", "3P%"), fill=c(c2, c1))
+```
+
+```{r}
+boxplot(basketball_codebook$x2p_percentage, basketball_codebook$x3p_percentage, col = c(c2, c1), names = c("2 Pointers", "3 Pointers"), ylab = "Percent of Shots Made", main = "Boxplot of 2P% and 3P%")
+```
+
+
+It appears that 2 point field goals seem to have a higher percentage of success. There also appears to be some outliers of high point accuracy which may be explained by only being in a small amount of games. I will explore this further by looking at shot accuracy and number of games played. 
+
+```{r}
+ggplot(basketball_codebook, aes(gp, x2p_percentage)) +geom_smooth(se = FALSE, color = "purple", size = 2)+ labs(title = "% of 2 Pointer Shots Made vs Games Played", x = "Games Played",  y= "% of 2 Pointer Shots Made") + geom_point(color = "#FFD700")
+```
+```{r}
+ggplot(basketball_codebook, aes(gp, x3p_percentage)) + geom_smooth(se = FALSE, color = "gold", size = 3)+ 
+  labs(title = "% of 3 Pointer Shots Made vs Games Played", x = "Games Played", y= "% of 3 Pointer Shots Made")+geom_point(color = "purple")
+```
+
+When it comes to 2 Point field goals made, it looks like most of the outliers can be attributed to the low number of games played. After about 20 games played, the percentage of shots made seems to taper between 0.3 - 0.6.
+
+Since 3 point field goals are more difficult to score, it makes sense that there are players with 0% 3 pointers scored, even with 40+ games played. This distribution is not as clean as the 2 Point field goals. 
+
+## Relationship between Assists, Blocks, Steals, Rebounds and Points per Game
+
+ggplot(basketball_codebook, aes(apg, spg))+
+  geom_smooth(se = FALSE, color = "red", size = 2) +geom_point()
+```{r}
+ggplot(basketball_codebook, aes(apg, ppg, color = pos))+
+  geom_smooth(se = FALSE, color = "red", size = 2) + labs(title = "Assists per Game vs Points Per Game", 
+                                                          x = "Assists per Game", y = "Points per Game") + geom_point()
+```
+```{r}
+ggplot(basketball_codebook, aes(bpg, ppg, color = pos))+
+  geom_smooth(se = FALSE, color = "red", size = 2) + labs(title = "Blocks per Game vs Points Per Game", 
+                                                          x = "Blocks per Game", y = "Points per Game")+geom_point()
+```
+```{r}
+ggplot(basketball_codebook, aes(spg, ppg, color = pos))+
+  geom_smooth(se = FALSE, color = "red", size = 2) + labs(title = "Steals per Game vs Points Per Game", 
+                                                          x = "Steals per Game", y = "Points per Game")+ geom_point()
+```
+```{r}
+ggplot(basketball_codebook, aes(rpg, ppg, color = pos))+
+  geom_smooth(se = FALSE, color = "red", size = 2) + labs(title = "Rebounds per Game vs Points Per Game",
+                                                          x = "Rebounds per Game", y = "Points per Game")+ geom_point()
+```
+
+
+For Assists, Steals, and Rebounds, there seems to be a positive relationship with how many points per game the player scores. There does not seem to be a very obvious correlation with Blocks, but it does appear that Point Guards tend to have less blocks per game, but the most points per game. 
+
+
+# Data Split
+
+The data was split in a 70% training and 30% testing split. 
+
+```{r}
+set.seed(123)
+basketball_split <- basketball_codebook %>%
+  initial_split(prop = 0.7, strata = "ppg")
+
+basketball_train <- training(basketball_split)
+basketball_test <- testing(basketball_split)
+```
+
+The training data set has about 440 observations and the testing data set has about 185. 
+
+
+# Model Building
+
+## Creating a recipe
+We want to create a recipe to represent the model we are fitting
+
+```{r}
+basketball_recipe <- recipe(ppg ~ pos + age + gp + mpg + min_percentage + usg + to_percentage + fta + ft_percentage 
+                            + x2pa + x2p_percentage + x3pa + x3p_percentage + e_fg + ts_percent + rpg + trb_percent + 
+                              apg + ast_percentage + spg + bpg + topg + vi_versatility + ortg_offensive + drtg_defensive, data = basketball_train) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_scale(all_predictors()) %>%
+  step_normalize(all_predictors()) %>%
+  step_novel(all_nominal_predictors()) %>%
+  step_nzv(all_nominal_predictors())
+
+basketball_recipe <- na.omit(basketball_recipe)
+
+```
+
+## Folds
+Stratified cross-validation with 10 folds and 5 repeats: 
+```{r}
+basketball_folds <- vfold_cv(basketball_train, strata = ppg, v = 10, repeats = 5)
+na.omit(basketball_folds)
+head(basketball_folds)
+```
+
+## Models
+I will conduct my models in the following way:
+- Specifying the model
+- Setting up the workflow
+- Tuning
+- Selecting the best values
+- Fitting the model to the testing set
+- Making predictions and creating visualizations
+
+### Ridge Regression
+
+Ridge regression is one of the types of regularization modeling. As $\lambda$ increases, bias increases and variance decreases. Ridge regression minimizes the sum of squared residuals as well as $\lambda \times$ the slope$^2$
+
+Specifying the model type and engine:
+setting ```mixture = 0``` to specify ridge regression. 
+
+```{r}
+ridge_spec <- linear_reg(penalty = tune(), mixture = 0) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+```
+
+
+In this step, I am setting up the workflow and adding the ```basketball_recipe```: 
+
+```{r}
+ridge_workflow <- workflow() %>%
+  add_recipe(basketball_recipe) %>%
+  add_model(ridge_spec)
+```
+
+
+Creating a grid with the values of penalty that we are trying, and tuning:
+
+```{r, warning=FALSE, message=FALSE}
+set.seed(24)
+
+penalty_grid <- grid_regular(penalty(range = c(1, 11)), levels = 50)
+penalty_grid
+
+tune_res <- tune_grid(
+  ridge_workflow,
+  resamples = basketball_folds)
+tune_res
+```
+
+Creating a visualization of the output of ```tune_grid()```:
+```{r}
+autoplot(tune_res)
+```
+
+Seeing the raw metrics:
+
+```{r}
+collect_metrics(tune_res)
+```
+
+Selecting the best values:
+
+```{r}
+best_penalty <- select_best(tune_res, metric = "rsq")
+best_penalty
+```
+
+Fitting the best model using the whole training data set:
+
+```{r}
+ridge_final <- finalize_workflow(ridge_workflow, best_penalty)
+ridge_final_fit <- fit(ridge_final, data = basketball_train)
+```
+
+
+Visualizing how the magnitude of the coefficients are being regularized towards zero as the penalty increases:
+```{r}
+ridge_final_fit %>%
+  extract_fit_engine() %>%
+  plot(xvar = "lambda")
+```
+
+
+Predict on testing set, and showing a visualization:
+```{r, warning=FALSE, message=FALSE}
+basketball_train_res1 <- predict(ridge_final_fit, new_data = basketball_test %>% dplyr::select(-ppg))
+basketball_train_res1 <- bind_cols(basketball_train_res1, basketball_test %>% dplyr::select(ppg))
+
+  
+ridge_graph <- basketball_train_res1 %>%
+  ggplot(aes(x=.pred, y =ppg)) + geom_point(alpha=1) + geom_abline(lty = 2) + coord_obs_pred()
+
+ridge_accuracy <- augment(ridge_final_fit, new_data = basketball_test) %>%
+  rsq(truth = ppg, estimate = .pred)
+
+
+ridge_accuracy
+ridge_graph
+```
+
+Here we can see what the model predicted vs the actual values of ```ppg```:
+
+```{r}
+head(basketball_train_res1)
+
+```
+
+
+### Decision Tree Model
+A decision tree uses a tree model of decisions and possible outcomes. Visualizing the model is easy to follow. For this model, I am fitting regression trees. 
+
+
+Creating a general decision tree specification using ```rpart``` as the engine
+```{r}
+tree_spec <- decision_tree() %>%
+  set_engine("rpart")
+```
+
+Regression decision tree engine:
+```{r}
+reg_tree_spec <- tree_spec %>%
+  set_mode("regression")
+```
+
+Tuning ```cost_complexity``` to find the best performing decision tree
+```{r, warning=FALSE, message=FALSE}
+reg_tree_wf <- workflow() %>%
+  add_model(reg_tree_spec %>% set_args(cost_complexity = tune())) %>%
+  add_recipe(basketball_recipe)
+
+set.seed(124)
+param_grid <- grid_regular(cost_complexity(range = c(-10,10)), levels = 100)
+
+tune_res_tree <- tune_grid(
+  reg_tree_wf,
+  resamples = basketball_folds,
+  grid = param_grid
+)
+
+autoplot(tune_res_tree)
+```
+Collecting the metrics:
+```{r, warning=FALSE, message=FALSE}
+tree_roc_auc <- collect_metrics(tune_res_tree) %>%
+  arrange(-mean)
+
+head(tree_roc_auc)
+```
+Selecting the best-performing model according to ```rmse``` and fitting the final model on the whole training data set:
+
+```{r, warning=FALSE, message=FALSE}
+best_complexity <- select_best(tune_res_tree, metric = "rmse")
+
+reg_tree_final <- finalize_workflow(reg_tree_wf, best_complexity)
+
+reg_tree_final_fit <- fit(reg_tree_final, data = basketball_train)
+```
+
+Visualizing the model:
+```{r, warning=FALSE}
+reg_tree_final_fit %>%
+  extract_fit_engine() %>%
+  rpart.plot()
+```
+
+Predict on testing set, showing a visualization, and checking the performance on the testing data set:
+```{r, warning=FALSE, message=FALSE}
+tree_prediction <- predict(reg_tree_final_fit, new_data = basketball_test %>% dplyr:: select(-ppg))
+tree_prediction <- bind_cols(tree_prediction, basketball_test %>% dplyr::select(ppg))
+
+
+tree_graph <- tree_prediction %>%
+  ggplot(aes(x = .pred, y = ppg)) + geom_point(alpha = 1) + geom_abline(lty = 2) + coord_obs_pred()
+
+tree_accuracy <- augment(reg_tree_final_fit, new_data = basketball_test) %>%
+  rsq(truth = ppg, estimate = .pred)
+
+tree_accuracy
+tree_graph
+```
+Here we can see what the model predicted vs the actual values of ```ppg```:
+```{r}
+head(tree_prediction)
+```
+
+
+
+### Lasso Regression
+I am using the glmnet package to perform lasso linear regression. Lasso regression is another type of regularization modeling. Lasso minimizes the sum of squared residuals. Unline Ridge regression, Lasso has variable selection. 
+
+
+I am using the ```glmnet``` package to perform lasso linear regression. For lasso regression, I have set ```mixture = 1```
+```{r}
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+```
+
+
+Setting up the workflow:
+```{r}
+lasso_workflow <- workflow() %>%
+  add_recipe(basketball_recipe) %>%
+  add_model(lasso_spec)
+```
+
+
+Setting up the penalty grid:
+```{r, warning=FALSE, message=FALSE}
+lasso_penalty_grid <- grid_regular(penalty(range = c(-5,10)), levels = 50)
+```
+
+
+Tuning and visualizing:
+```{r, warning=FALSE, message=FALSE}
+set.seed(300)
+tune_res_lasso <- tune_grid(
+  lasso_workflow,
+  resamples = basketball_folds,
+  grid = lasso_penalty_grid
+)
+head(tune_res_lasso)
+autoplot(tune_res_lasso)
+```
+
+Collecting the metrics and selecting the best value of penalty and refitting using the test set:
+
+```{r, warning=FALSE, message=FALSE}
+lasso_metrics <- collect_metrics(tune_res_lasso)
+head(lasso_metrics)
+best_penalty_lasso <- select_best(tune_res_lasso, metric="rsq")
+
+lasso_final <- finalize_workflow(lasso_workflow, best_penalty_lasso)
+
+lasso_final_fit <- fit(lasso_final, data = basketball_train)
+
+lasso_prediction <- predict(lasso_final_fit, new_data = basketball_test %>%
+                              dplyr::select(-ppg))
+lasso_prediction <- bind_cols(lasso_prediction, basketball_test %>% dplyr::select(ppg))
+
+lasso_graph <- lasso_prediction %>%
+  ggplot(aes(x=.pred, y=ppg)) + geom_point(alpha=1) + geom_abline(lty=2)
+lasso_graph
+
+lasso_accuracy <- augment(lasso_final_fit, new_data = basketball_test) %>%
+  rsq(truth=ppg, estimate = .pred)
+
+
+```
+
+Here we can see what the model predicted vs the actual values of ```ppg```:
+```{r}
+head(lasso_prediction)
+```
+
+
+
+## Support Vector Machine
+Support Vector Regression is a supervised learning algorithm. 
+
+```{r}
+svm_linear_spec <- svm_poly(degree = 1) %>%
+  set_mode("regression") %>%
+  set_engine("kernlab", scaled = FALSE)
+```
+
+Setting up the workflow, tuning and visualizing:
+```{r, warning=FALSE, message=FALSE}
+svm_linear_wf <- workflow() %>%
+  add_model(svm_linear_spec %>% set_args(cost = tune())) %>%
+  add_recipe(basketball_recipe)
+
+set.seed(4529)
+
+svm_grid <- grid_regular(cost(), levels = 10)
+
+svm_tune_res <- tune_grid(
+  svm_linear_wf,
+  resamples = basketball_folds,
+  grid = svm_grid
+)
+autoplot(svm_tune_res)
+```
+
+Collecting the metrics:
+```{r}
+svm_RMSE <- collect_metrics(svm_tune_res) %>% 
+  dplyr::select(.metric, mean, std_err) %>%
+  head()
+svm_RMSE
+```
+
+
+Selecting the best value of ```rsq``` and fitting the model on the entire testing set:
+```{r}
+best_cost <- select_best(svm_tune_res, metric = "rsq")
+
+svm_linear_final <- finalize_workflow(svm_linear_wf, best_cost)
+
+svm_linear_fit <- fit(svm_linear_final, data = basketball_train)
+
+svm_prediction <- predict(svm_linear_fit, new_data = basketball_test %>% dplyr::select(-ppg))
+
+svm_prediction <- bind_cols(svm_prediction, basketball_test %>% dplyr::select(ppg))
+
+svm_graph <- svm_prediction %>% 
+  ggplot(aes(x=.pred, y=ppg)) + geom_point(alpha=1) + geom_abline(lty = 2)  + coord_obs_pred()
+
+
+svm_accuracy <- augment(svm_linear_fit, new_data = basketball_test) %>%
+  rsq(truth = ppg, estimate = .pred)
+
+
+svm_graph
+svm_accuracy
+
+```
+
+Here we can see what the model predicted vs the actual values of ```ppg```:
+```{r}
+head(svm_prediction)
+```
+It looks like the model did a good job for the most part. 
+
+
+# Conclusion
+
+## Graph
+Creating a comparison of all models and how closely their predictions fit. The dotted line represents the actual value of ```ppg``` and each dot represents what the model predicted. Therefore, the closer the point is to the line, the more accurate the model predicted ```ppg```:
+
+```{r}
+comparison_figure <- ggarrange(ridge_graph, lasso_graph, tree_graph, svm_graph, labels = c("Ridge", "Lasso", "Tree", "Support Vector Classifier"))
+comparison_figure
+```
+
+## Comparing accuracies:
+
+I am comparing the accuracy of the models by looking at their rsq value. R-Squared is a statistical measure of fit that indicates how much variation of a dependent variable is explained by the independent variable(s) . 
+
+```{r}
+rsq_comparisons <- bind_rows(ridge_accuracy, lasso_accuracy, tree_accuracy, svm_accuracy) %>% 
+  tibble() %>% mutate(model = c("Ridge", "Lasso", "Tree", "SVM")) %>% 
+  dplyr::select(model, .estimate) %>%
+  arrange(.estimate)
+rsq_comparisons
+```
+Based on RSQ, the Lasso Regression model is the most accurate, and the tree model is the least accurate. Despite this, I would say that all of my models performed well because they all have accuracies that are over 0.90.
+
+## Summary
+
+To predict the outcome of how many points per game a player in the NBA scores, I compared a Ridge Regression model, a Lasso Regression model, a Tree model and a Support Vector Machine model. Based on my exploratory data analysis, I can conclude that the most important factor on whether a player will score more points per game is minutes per game. Based on the comparisons I made, I can conclude that the Lasso Regression model is the best at predicting how many points on average a player will score per game. The rest of the models also performed very well, with all of them having high accuracies.  
+
