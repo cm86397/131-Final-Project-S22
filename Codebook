@@ -1,0 +1,30 @@
+Data Citation: https://www.nbastuffer.com/2020-2021-nba-player-stats/
+
+- Full Name: Player's full name
+- Team: Team name
+- POS: The position that the player is in
+- AGE: Player's age
+- GP: Total number of games played in the season
+- MPG: The average number of minutes a player has played per game
+- MIN%: Percentage of team minutes used by a player while he was on the floor
+- USG%: The percentage of team plays used by a player when they are on
+- TO%:  A metric that estimates the number of turnovers a player commits per 100 possessions
+- FTA: The number of free throws that a player has attempted
+- FT%:  The percentage of free throw attempts that a player has made successfully
+- 2PA: The number of two pointers that a player has attempted
+- 2P%: The percentage of points scored by a player that are from 2 point field goals
+- 3PA: The number of 3 point field goals that a player has attempted
+- 3P%:  The percentage of points scored by a player that are from 3 point field goals
+- eFG%: Measures field goal percentage adjusting for made 3-point field goals being 1.5 times more valuable than made 2-point field goals.
+- TS%: A shooting percentage that factors in the value of three-point field goals and free throws in addition to conventional two-point field goals
+- PPG: Thr average number of points per game that a player will score
+- RPG: The number of rebounds a player makes per game
+- TRB%:  The estimated percentage of available rebounds grabbed by the player while the player is on the court
+- APG: The average number of assists a player makes per game
+- AST%: The estimated percentage of teammate field goals a player assisted while the player is on the court
+- SPG: The average number of steals a player makes per game
+- BPG:The average number of blocks a player makes per game
+- TOPG: The average number of turnovers a player makes per game, it is when a team loses possession of the ball to the opposing team
+- VI: A metric that measures a player’s ability to produce in points, assists, and rebounds. The average player will score around a 5 on the index, while top players score above a 10
+- ORTG: The number of points produced by a player per 100 total individual possessions
+- DRTG: The number of points the player allowed per 100 possessions he individually faced while staying on the court
